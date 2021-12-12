@@ -10,10 +10,12 @@ const sauceRoutes = require('./routes/sauce');
 require('dotenv').config();
 const mongodbUser = process.env.DB_USER;
 const mongodbPass = process.env.DB_PASS;
+const mongodbCluster = process.env.DB_CLUSTER;
+const mongodbName = process.env.DB_NAME;
 
 mongoose
   .connect(
-    `mongodb+srv://${mongodbUser}:${mongodbPass}@cluster0.lhi32.mongodb.net/test?retryWrites=true&w=majority`,
+    `mongodb+srv://${mongodbUser}:${mongodbPass}@${mongodbCluster}/${mongodbName}?retryWrites=true&w=majority`,
     { useNewUrlParser: true, useUnifiedTopology: true }
   )
   .then(() => console.log('Connexion à MongoDB réussie !'))

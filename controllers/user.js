@@ -3,27 +3,57 @@ const bcrypt = require('bcrypt');
 //Le package jsonwebtoken pour pouvoir créer et vérifier les tokens d'authentification
 const jwt = require('jsonwebtoken');
 
+const passwordValidator = require('password-validator');
+
+const passwordSchema = new passwordValidator();
+
 //User model
 const User = require('../models/User');
 
+passwordSchema
+  .is()
+  .min(8) // Minimum length 8
+  .is()
+  .max(20) // Maximum length 100
+  .has()
+  .uppercase() // Must have uppercase letters
+  .has()
+  .lowercase() // Must have lowercase letters
+  .has()
+  .digits(2) // Must have at least 2 digits
+  .has()
+  .not()
+  .spaces() // Should not have spaces
+  .is()
+  .not()
+  .oneOf(['Passw0rd', 'Password123']); // Blacklist these values
+
 exports.signup = (req, res, next) => {
-  bcrypt
-    .hash(req.body.password, 10)
-    .then((hash) => {
-      const signupUser = new User({
-        email: req.body.email,
-        password: hash,
-      });
-      signupUser
-        .save()
-        .then(() => res.status(201).json({ message: 'User created !' }))
-        .catch((error) =>
-          res
-            .status(400)
-            .json({ message: 'email that already exists in the database' })
-        );
-    })
-    .catch((error) => res.status(500).json({ error }));
+  if (passwordSchema.validate(req.body.password)) {
+    bcrypt
+      .hash(req.body.password, 10)
+      .then((hash) => {
+        const signupUser = new User({
+          email: req.body.email,
+          password: hash,
+        });
+        signupUser
+          .save()
+          .then(() => res.status(201).json({ message: 'User created !' }))
+          .catch((error) =>
+            res
+              .status(400)
+              .json({ message: 'email that already exists in the database' })
+          );
+      })
+      .catch((error) => res.status(500).json({ error }));
+  } else {
+    return res.status(400).json({
+      message: `Weak password: ${passwordSchema.validate('req.body.password', {
+        list: true,
+      })}`,
+    });
+  }
 };
 
 exports.login = (req, res, next) => {
