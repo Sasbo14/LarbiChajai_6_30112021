@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 const envdbToken = process.env.DB_TOKEN;
 
 module.exports = (req, res, next) => {

@@ -10,6 +10,9 @@ const passwordSchema = new passwordValidator();
 //User model
 const User = require('../models/User');
 
+require('dotenv').config();
+const envdbToken = process.env.DB_TOKEN;
+
 passwordSchema
   .is()
   .min(8) // Minimum length 8
@@ -68,18 +71,14 @@ exports.login = (req, res, next) => {
         .compare(req.body.password, registeredUser.password)
         .then((valid) => {
           if (!valid) {
-            return res.status(401).json({ error: 'incorrect password !' });
+            return res.status(401).json({ message: 'incorrect password !' });
           }
           //Si les identifiants sont valables, on renvoi un userId et le token d'identification
           res.status(200).json({
             userId: registeredUser._id,
-            token: jwt.sign(
-              { userId: registeredUser._id },
-              'RANDOM_TOKEN_SECRET',
-              {
-                expiresIn: '24h',
-              }
-            ),
+            token: jwt.sign({ userId: registeredUser._id }, `${envdbToken}`, {
+              expiresIn: '24h',
+            }),
           });
         })
         .catch((error) => res.status(500).json({ error }));

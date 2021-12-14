@@ -48,6 +48,7 @@ const errorHandler = (error) => {
   }
 };
 
+//Un serveur Node basique est démarré avec la méthode createServer du package http
 const server = http.createServer(app);
 
 server.on('error', errorHandler);
