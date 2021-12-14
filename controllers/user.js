@@ -1,5 +1,9 @@
 //encryption package
 const bcrypt = require('bcrypt');
+
+//package de crypto-js pour chiffrer l'email
+const cryptoJs = require('crypto-js');
+
 //Le package jsonwebtoken pour pouvoir créer et vérifier les tokens d'authentification
 const jwt = require('jsonwebtoken');
 
@@ -12,6 +16,7 @@ const User = require('../models/User');
 
 require('dotenv').config();
 const envdbToken = process.env.DB_TOKEN;
+const envdbKey = process.env.DB_CRYPTOEMAIL;
 
 passwordSchema
   .is()
@@ -33,11 +38,15 @@ passwordSchema
 
 exports.signup = (req, res, next) => {
   if (passwordSchema.validate(req.body.password)) {
+    //chiffrement de l'email
+    const cryptoEmail = cryptoJs
+      .HmacSHA256(req.body.email, `${envdbToken}`)
+      .toString();
     bcrypt
       .hash(req.body.password, 10)
       .then((hash) => {
         const signupUser = new User({
-          email: req.body.email,
+          email: cryptoEmail,
           password: hash,
         });
         signupUser
@@ -60,8 +69,12 @@ exports.signup = (req, res, next) => {
 };
 
 exports.login = (req, res, next) => {
+  const cryptoEmail = cryptoJs
+    .HmacSHA256(req.body.email, `${envdbToken}`)
+    .toString();
+
   //findOne pour trouver l'utilisateur qui correspond à l'email envoyer dans la requête
-  User.findOne({ email: req.body.email })
+  User.findOne({ email: cryptoEmail })
     .then((registeredUser) => {
       if (!registeredUser) {
         return res.status(401).json({ error: 'User not found! !' });
@@ -76,6 +89,7 @@ exports.login = (req, res, next) => {
           //Si les identifiants sont valables, on renvoi un userId et le token d'identification
           res.status(200).json({
             userId: registeredUser._id,
+            //la métode sign()  du package  jsonwebtoken  utilise une clé secrète pour encoder un token qui peut contenir un payload personnalisé et avoir une validité limitée.
             token: jwt.sign({ userId: registeredUser._id }, `${envdbToken}`, {
               expiresIn: '24h',
             }),
