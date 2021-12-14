@@ -40,7 +40,7 @@ exports.signup = (req, res, next) => {
   if (passwordSchema.validate(req.body.password)) {
     //chiffrement de l'email
     const cryptoEmail = cryptoJs
-      .HmacSHA256(req.body.email, `${envdbToken}`)
+      .HmacSHA256(req.body.email, `${envdbKey}`)
       .toString();
     bcrypt
       .hash(req.body.password, 10)
