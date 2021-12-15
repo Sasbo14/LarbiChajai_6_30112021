@@ -52,6 +52,7 @@ exports.getOneSauce = (req, res, next) => {
 };
 
 exports.modifySauce = (req, res, next) => {
+  //SauceObject vérifie si un fichier image existe déjà, si il existe on execute le code apres l'opérateur ternaire
   const sauceObject = req.file
     ? {
         ...JSON.parse(req.body.sauce),
