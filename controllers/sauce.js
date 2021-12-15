@@ -15,19 +15,25 @@ exports.createSauce = (req, res, next) => {
     usersDisliked: [],
     usersLiked: [],
   });
-  sauce
-    .save()
-    .then(() => {
-      res.status(201).json({
-        message: 'Post saved successfully!',
+
+  if (sauce.userId === req.token.userId) {
+    sauce
+      .save()
+      .then(() => {
+        res.status(201).json({
+          message: 'Post saved successfully!',
+        });
+      })
+      .catch((error) => {
+        res.status(400).json({
+          error: error,
+        });
       });
-    })
-    .catch((error) => {
-      res.status(400).json({
-        error: error,
-      });
-    });
-  console.log(sauce);
+  } else {
+    res
+      .status(401)
+      .json({ error: 'Vous ne pouvez pas créer de sauce avec cet userId' });
+  }
 };
 
 exports.getOneSauce = (req, res, next) => {
@@ -71,21 +77,33 @@ exports.modifySauce = (req, res, next) => {
     });
 };
 
+//Suppression de la sauce
 exports.deleteSauce = (req, res, next) => {
+  //On récupère la sauce avec l'id qui correspond  à l'id des paramètres de la requête
   Sauce.findOne({ _id: req.params.id })
     .then((sauce) => {
-      const filename = sauce.imageUrl.split('/images/')[1];
-      fs.unlink(`images/${filename}`, () => {
-        Sauce.deleteOne({ _id: req.params.id })
-          .then(() => {
-            res.status(200).json({
-              message: 'Sauce deleted',
+      //On s'assure que celui qui supprime la sauce est bien le propriétaire de la sauce
+      //On compare donc le userId  avec le userId du token
+      if (sauce.userId === req.token.userId) {
+        const filename = sauce.imageUrl.split('/images/')[1];
+        //méthode fs.unlink qui supprime l'image du dossier images
+        fs.unlink(`images/${filename}`, () => {
+          //suppression de la sauce de la base de données
+          Sauce.deleteOne({ _id: req.params.id })
+            .then(() => {
+              res.status(200).json({
+                message: 'Sauce deleted',
+              });
+            })
+            .catch((error) => {
+              res.status(400).json({ error: error });
             });
-          })
-          .catch((error) => {
-            res.status(400).json({ error: error });
-          });
-      });
+        });
+      } else {
+        res
+          .status(401)
+          .json({ error: 'Cette sauce ne vous appartient pas!!!' });
+      }
     })
     .catch((error) => res.status(500).json({ error }));
 };
