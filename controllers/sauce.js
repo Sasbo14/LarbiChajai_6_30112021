@@ -2,10 +2,12 @@ const Sauce = require('../models/Sauce');
 const fs = require('fs');
 
 exports.createSauce = (req, res, next) => {
+  //transformation des informations de la requête chaine JSON en objet
   const sauceObject = JSON.parse(req.body.sauce);
   //supprime l'id qui vient du front
   delete sauceObject._id;
   const sauce = new Sauce({
+    //spread operator pour copier tous les éléments de req.body
     ...sauceObject,
     imageUrl: `${req.protocol}://${req.get('host')}/images/${
       req.file.filename
@@ -16,7 +18,9 @@ exports.createSauce = (req, res, next) => {
     usersLiked: [],
   });
 
+  //Vérifie si le userId de la sauce correspond à celui du token pour éviter que n'importe qui puisse créer des sauces à la place de quelqu'un d'autres
   if (sauce.userId === req.token.userId) {
+    //sauvegarde la sauce dans la base de données
     sauce
       .save()
       .then(() => {
@@ -36,6 +40,7 @@ exports.createSauce = (req, res, next) => {
   }
 };
 
+//recupere une seul sauce
 exports.getOneSauce = (req, res, next) => {
   //Méthode findOne pour trouver la sauce unique ayant le même _id que le paramètre de la requête
   Sauce.findOne({
@@ -52,7 +57,7 @@ exports.getOneSauce = (req, res, next) => {
 };
 
 exports.modifySauce = (req, res, next) => {
-  //SauceObject vérifie si un fichier image existe déjà, si il existe on execute le code apres l'opérateur ternaire
+  //SauceObject vérifie si un fichier image existe déjà, si il existe on execute le code apres l'opérateur ternaire sion le code après les ":""
   const sauceObject = req.file
     ? {
         ...JSON.parse(req.body.sauce),
@@ -61,21 +66,31 @@ exports.modifySauce = (req, res, next) => {
         }`,
       }
     : { ...req.body };
-  //Méthode updateOne pour mettre à jour la sauce qui correspond à l'objet que l'on passe comme premier argument.
-  Sauce.updateOne(
-    { _id: req.params.id },
-    { ...sauceObject, _id: req.params.id }
-  )
-    .then(() => {
-      res.status(200).json({
-        message: 'Sauce updated successfully!',
+
+  // Vérifie si l'utilisateur associé à la sauce est bien celui qui a envoyé la requête
+  if (sauceObject.userId === req.token.userId) {
+    //Méthode updateOne pour mettre à jour la sauce qui correspond à l'objet que l'on passe comme premier argument.
+    Sauce.updateOne(
+      //sauce à modifier
+      { _id: req.params.id },
+      //sauce modifier, on lui rajoute l'id qui correspond à celui des paramètres pour s'assurer d'avoir le même
+      { ...sauceObject, _id: req.params.id }
+    )
+      .then(() => {
+        res.status(200).json({
+          message: 'Sauce updated successfully!',
+        });
+      })
+      .catch((error) => {
+        res.status(400).json({
+          error: error,
+        });
       });
-    })
-    .catch((error) => {
-      res.status(400).json({
-        error: error,
-      });
+  } else {
+    res.status(401).json({
+      error: 'Modification impossible, cette sauce ne vous appartient pas!',
     });
+  }
 };
 
 //Suppression de la sauce
