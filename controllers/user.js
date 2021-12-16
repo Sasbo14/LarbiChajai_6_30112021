@@ -40,7 +40,7 @@ exports.signup = (req, res, next) => {
   if (passwordSchema.validate(req.body.password)) {
     //chiffrement de l'email
     const cryptoEmail = cryptoJs
-      .HmacSHA256(req.body.email, `${envdbKey}`)
+      .HmacSHA3(req.body.email, `${envdbKey}`)
       .toString();
     bcrypt
       .hash(req.body.password, 10)
@@ -70,7 +70,7 @@ exports.signup = (req, res, next) => {
 
 exports.login = (req, res, next) => {
   const cryptoEmail = cryptoJs
-    .HmacSHA256(req.body.email, `${envdbToken}`)
+    .HmacSHA3(req.body.email, `${envdbKey}`)
     .toString();
 
   //findOne pour trouver l'utilisateur qui correspond à l'email envoyer dans la requête
