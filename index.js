@@ -5,7 +5,7 @@ const http = require('http');
 //Import Express app
 const app = require('./app');
 
-//Variables d'environnement
+// Environment variables
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -48,7 +48,7 @@ const errorHandler = (error) => {
   }
 };
 
-//Un serveur Node basique est démarré avec la méthode createServer du package http
+// A basic Node server is started with the createServer method of the http package
 const server = http.createServer(app);
 
 server.on('error', errorHandler);

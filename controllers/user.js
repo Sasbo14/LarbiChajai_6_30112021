@@ -1,8 +1,8 @@
 //encryption package
 const bcrypt = require('bcrypt');
-//Le package jsonwebtoken pour pouvoir créer et vérifier les tokens d'authentification
+//The jsonwebtoken package to be able to create and verify authentication tokens
 const jwt = require('jsonwebtoken');
-
+//password-validator package to strengthen the password
 const passwordValidator = require('password-validator');
 
 const passwordSchema = new passwordValidator();
@@ -13,6 +13,7 @@ const User = require('../models/User');
 require('dotenv').config();
 const envdbToken = process.env.DB_TOKEN;
 
+//pattern want password
 passwordSchema
   .is()
   .min(8) // Minimum length 8
@@ -31,15 +32,20 @@ passwordSchema
   .not()
   .oneOf(['Passw0rd', 'Password123']); // Blacklist these values
 
+//registration of new users
 exports.signup = (req, res, next) => {
+  //If the password matches the pattern
   if (passwordSchema.validate(req.body.password)) {
+    //bcrypt hash function and we sell the password 10 times
     bcrypt
       .hash(req.body.password, 10)
       .then((hash) => {
+        //Create user
         const signupUser = new User({
           email: req.body.email,
           password: hash,
         });
+        //save in the database
         signupUser
           .save()
           .then(() => res.status(201).json({ message: 'User created !' }))
@@ -59,21 +65,22 @@ exports.signup = (req, res, next) => {
   }
 };
 
+//login existing users
 exports.login = (req, res, next) => {
-  //findOne pour trouver l'utilisateur qui correspond à l'email envoyer dans la requête
+  //findOne to find the user that matches the email send in the request
   User.findOne({ email: req.body.email })
     .then((registeredUser) => {
       if (!registeredUser) {
         return res.status(401).json({ error: 'User not found! !' });
       }
-      //On compare le mdp envoyer dans la requête avec le mdp du hash enregistrer dans le registeredUser
+      //compare the password sent in the request with the password of the hash registered in the registeredUser
       bcrypt
         .compare(req.body.password, registeredUser.password)
         .then((valid) => {
           if (!valid) {
             return res.status(401).json({ message: 'incorrect password !' });
           }
-          //Si les identifiants sont valables, on renvoi un userId et le token d'identification
+          //If the identifiers are valid, we return a userId and the identification token
           res.status(200).json({
             userId: registeredUser._id,
             token: jwt.sign({ userId: registeredUser._id }, `${envdbToken}`, {
